@@ -1,11 +1,12 @@
 (function() {
   const STORAGE_KEY = 'pff_esports_session_v1';
 
-  /** @typedef {{match:string, player:string, mode:string, lifeNum:number, score:number, good_fight:number, good_route:number, bad_route:number, got_spawns:number, lost_spawns:number, free_kill:number, free_death:number}} Life */
+  /** @typedef {{match_id:string, player:string, mode:string, lifeNum:number, score:number, good_fight:number, good_route:number, bad_route:number, got_spawns:number, lost_spawns:number, free_kill:number, free_death:number}} Life */
 
-  /** @type {{ match:string, player:string, mode:string, lives:Life[], nextLifeNum:number, editingIndex:number|null, selectedScore:number|null }} */
+  /** @type {{ match:string, matchId:string|null, player:string, mode:string, lives:Life[], nextLifeNum:number, editingIndex:number|null, selectedScore:number|null }} */
   const state = {
     match: '',
+    matchId: null,
     player: '',
     mode: '',
     lives: [],
@@ -33,6 +34,7 @@
   const livesEl = document.getElementById('lives');
   const exportCsvBtn = document.getElementById('exportCsvBtn');
   const resetBtn = document.getElementById('resetBtn');
+  const matchIdDisplay = document.getElementById('matchIdDisplay');
 
   // Load session
   loadFromStorage();
@@ -40,9 +42,10 @@
   renderLives();
   reflectHeaderInputs();
   reflectSelectedScore();
+  updateMatchIdDisplay();
 
   function bindEvents() {
-    matchLink.addEventListener('input', () => { state.match = matchLink.value.trim(); persist(); });
+    matchLink.addEventListener('input', () => { state.match = matchLink.value.trim(); autoParseMatchId(); persist(); });
     playerSelect.addEventListener('change', () => { state.player = playerSelect.value; persist(); });
     modeSelect.addEventListener('change', () => { state.mode = modeSelect.value; persist(); });
 
@@ -58,6 +61,37 @@
     resetBtn.addEventListener('click', resetSession);
   }
 
+  function autoParseMatchId() {
+    const url = (state.match || '').trim();
+    if (!url) { state.matchId = null; updateMatchIdDisplay(); return; }
+    const id = parseMatchIdFromUrl(url);
+    if (!id) { state.matchId = null; showMatchIdError('Invalid match URL. Expected https://www.breakingpoint.gg/match/{id}/{slug}'); return; }
+    state.matchId = id;
+    updateMatchIdDisplay();
+  }
+
+  function parseMatchIdFromUrl(url) {
+    // Valid: https://www.breakingpoint.gg/match/{match_id}/{some string}
+    const regex = /^https:\/\/www\.breakingpoint\.gg\/match\/([^\/]+)\/.+/i;
+    const m = url.match(regex);
+    return m ? m[1] : null;
+  }
+
+  function showMatchIdError(msg) {
+    matchIdDisplay.textContent = msg;
+    matchIdDisplay.classList.add('error');
+  }
+
+  function updateMatchIdDisplay() {
+    if (state.matchId) {
+      matchIdDisplay.textContent = `Match ID: ${state.matchId}`;
+      matchIdDisplay.classList.remove('error');
+    } else {
+      matchIdDisplay.textContent = '';
+      matchIdDisplay.classList.remove('error');
+    }
+  }
+
   function onSubmitLife() {
     if (!state.player || !state.mode) {
       alert('Please select a player and a game/mode first.');
@@ -68,7 +102,7 @@
     }
 
     const life = /** @type {Life} */ ({
-      match: state.match || '',
+      match_id: state.matchId || '',
       player: state.player,
       mode: state.mode,
       lifeNum: state.editingIndex === null ? state.nextLifeNum : state.lives[state.editingIndex].lifeNum,
@@ -118,7 +152,7 @@
 
         const meta = document.createElement('div');
         meta.className = 'meta';
-        const matchStr = life.match ? ` | ${life.match}` : '';
+        const matchStr = life.match_id ? ` | ID: ${life.match_id}` : '';
         meta.textContent = `${life.player} | ${life.mode}${matchStr}`;
         left.appendChild(meta);
 
@@ -165,12 +199,11 @@
   function startEdit(index) {
     const life = state.lives[index];
     state.editingIndex = index;
-    state.match = life.match || '';
     state.player = life.player;
     state.mode = life.mode;
     state.selectedScore = life.score;
 
-    matchLink.value = state.match;
+    // Keep current parsed URL and matchId as session-level; do not override from life
     playerSelect.value = state.player;
     modeSelect.value = state.mode;
     chips.goodFight.checked = life.good_fight === 1;
@@ -228,6 +261,7 @@
   function persist() {
     const data = {
       match: state.match,
+      matchId: state.matchId,
       player: state.player,
       mode: state.mode,
       lives: state.lives,
@@ -242,9 +276,18 @@
       if (!raw) return;
       const saved = JSON.parse(raw);
       state.match = saved.match || '';
+      state.matchId = saved.matchId || null;
       state.player = saved.player || '';
       state.mode = saved.mode || '';
-      state.lives = Array.isArray(saved.lives) ? saved.lives : [];
+      // Migrate any historical records that used `match` to `match_id`
+      state.lives = Array.isArray(saved.lives) ? saved.lives.map(function(l){
+        if (typeof l === 'object' && l !== null) {
+          if (!('match_id' in l) && 'match' in l) {
+            l.match_id = l.match || '';
+          }
+        }
+        return l;
+      }) : [];
       state.nextLifeNum = Number(saved.nextLifeNum) || (state.lives.length + 1);
     } catch {}
   }
@@ -252,14 +295,14 @@
   function exportCsv() {
     if (state.lives.length === 0) { alert('No lives to export.'); return; }
     const rows = [];
-    const headers = ['match','game_mode','player','life_num','score','good_route','bad_route','good_fight','got_spawns','lost_spawns','free_kill','free_death'];
+    const headers = ['match_id','game_mode','player','life_num','score','good_route','bad_route','good_fight','got_spawns','lost_spawns','free_kill','free_death'];
     rows.push(headers);
     state.lives
       .slice()
       .sort((a,b) => a.lifeNum - b.lifeNum)
       .forEach(l => {
         rows.push([
-          l.match || '',
+          l.match_id || '',
           l.mode,
           l.player,
           String(l.lifeNum),
@@ -279,8 +322,9 @@
     const a = document.createElement('a');
     const playerSlug = state.player ? state.player.replace(/\s+/g,'_') : 'player';
     const modeSlug = state.mode ? state.mode.replace(/\s+/g,'_') : 'mode';
+    const idSlug = state.matchId ? state.matchId : 'noid';
     a.href = url;
-    a.download = `lives_${playerSlug}_${modeSlug}.csv`;
+    a.download = `lives_${idSlug}_${playerSlug}_${modeSlug}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -295,6 +339,7 @@
     if (!confirm('This will clear all lives and session settings. Continue?')) return;
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     state.match = '';
+    state.matchId = null;
     state.player = '';
     state.mode = '';
     state.lives = [];
@@ -304,6 +349,7 @@
     reflectHeaderInputs();
     reflectSelectedScore();
     renderLives();
+    updateMatchIdDisplay();
   }
 })();
 

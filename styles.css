@@ -21,6 +21,7 @@ input[type="text"], select { width: 100%; padding: 10px 12px; border-radius: 8px
 button.primary { background: var(--primary); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; }
 button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; cursor: pointer; }
 button.danger { background: var(--danger); color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; }
+.ghost.small { padding: 6px 10px; font-size: 12px; }
 .lives { display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 170px); overflow: auto; }
 .life-item { background: #0f1220; border: 1px solid var(--border); padding: 10px 12px; border-radius: 10px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
 .life-item .meta { font-size: 12px; color: var(--muted); }
@@ -31,5 +32,8 @@ button.danger { background: var(--danger); color: white; border: none; padding: 
 .life-actions button { padding: 6px 10px; font-size: 12px; }
 .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 18px; border: 1px dashed var(--border); border-radius: 10px; }
 @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.hint { margin-top: 6px; font-size: 12px; color: var(--muted); min-height: 18px; }
+.hint.error { color: #fca5a5; }
 
 
