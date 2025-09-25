@@ -38,10 +38,15 @@
             <label for="modeSelect">Select Game / Mode</label>
             <select id="modeSelect">
               <option value="">– Select –</option>
-              <option>Hardpoint</option>
-              <option>Search &amp; Destroy</option>
-              <option>Control</option>
-              <option>Other</option>
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option>4</option>
+              <option>5</option>
+              <option>6</option>
+              <option>7</option>
+              <option>8</option>
+              <option>9</option>
             </select>
           </div>
         </div>
@@ -49,9 +54,13 @@
         <div class="section-title">Score the life overall</div>
         <div class="score-row" role="group" aria-label="Life Score">
           <button type="button" class="score-btn" data-score="-2">-2</button>
+          <button type="button" class="score-btn" data-score="-1.5">-1.5</button>
           <button type="button" class="score-btn" data-score="-1">-1</button>
+          <button type="button" class="score-btn" data-score="-1">-0.5</button>
           <button type="button" class="score-btn" data-score="0">0</button>
+          <button type="button" class="score-btn" data-score="0.5">+0.5</button>
           <button type="button" class="score-btn" data-score="1">+1</button>
+          <button type="button" class="score-btn" data-score="1.5">+1.5</button>
           <button type="button" class="score-btn" data-score="2">+2</button>
         </div>
 
@@ -64,10 +73,6 @@
           <div class="chip-row">
             <label class="chip"><input id="goodRoute" type="checkbox"> GOOD ROUTE</label>
             <label class="chip"><input id="badRoute" type="checkbox"> BAD ROUTE</label>
-          </div>
-          <div class="chip-row">
-            <label class="chip"><input id="gotSpawns" type="checkbox"> GOT SPAWNS</label>
-            <label class="chip"><input id="lostSpawns" type="checkbox"> LOST SPAWNS</label>
           </div>
           <div class="chip-row">
             <label class="chip"><input id="freeKill" type="checkbox"> FREE KILL</label>

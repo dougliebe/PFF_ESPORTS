@@ -1,4 +1,4 @@
-:root { --bg:#0f1115; --panel:#151823; --muted:#8a8fa3; --text:#e7e9f2; --primary:#3b82f6; --accent:#22c55e; --danger:#ef4444; --border:#23273a; }
+:root { --bg:#0f1115; --panel:#151823; --muted:#cfcfcf; --text:#e7e9f2; --primary:#3b82f6; --accent:#22c55e; --danger:#ef4444; --border:#fdfdfd; }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }

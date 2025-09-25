@@ -12,7 +12,7 @@
     lives: [],
     nextLifeNum: 1,
     editingIndex: null,
-    selectedScore: null
+    selectedScore: 0
   };
 
   // Elements
@@ -209,7 +209,7 @@
     }
     state.lives
       .slice()
-      .sort((a, b) => a.lifeNum - b.lifeNum)
+      .sort((a, b) => b.lifeNum - a.lifeNum)
       .forEach((life, index) => {
         const item = document.createElement('div');
         item.className = 'life-item';
@@ -302,7 +302,7 @@
   }
 
   function clearForm() {
-    state.selectedScore = null;
+    state.selectedScore = 0;
     Object.values(chips).forEach(chk => chk.checked = false);
     reflectSelectedScore();
     clearEditMode();
