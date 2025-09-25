@@ -26,14 +26,13 @@
           </div>
           <div style="grid-column: span 3;">
             <label for="playerSelect">Select Player</label>
-            <select id="playerSelect">
-              <option value="">– Select –</option>
-              <option>Player 1</option>
-              <option>Player 2</option>
-              <option>Player 3</option>
-              <option>Player 4</option>
-              <option>Player 5</option>
-            </select>
+            <input id="playerSelect" type="text" list="playersList" placeholder="Start typing a player..." autocomplete="off">
+            <datalist id="playersList"></datalist>
+            <div class="actions" style="justify-content:flex-start; margin-top:6px;">
+              <button id="loadPlayersBtn" class="ghost small" title="Load players.csv manually">Load Players CSV</button>
+              <input id="playersFile" type="file" accept=".csv,text/csv" style="display:none">
+            </div>
+            <div id="playersHint" class="hint"></div>
           </div>
           <div style="grid-column: span 3;">
             <label for="modeSelect">Select Game / Mode</label>
@@ -58,13 +57,22 @@
 
         <div class="section-title">Select all that apply</div>
         <div class="chips">
-          <label class="chip"><input id="goodFight" type="checkbox"> GOOD FIGHT</label>
-          <label class="chip"><input id="goodRoute" type="checkbox"> GOOD ROUTE</label>
-          <label class="chip"><input id="badRoute" type="checkbox"> BAD ROUTE</label>
-          <label class="chip"><input id="gotSpawns" type="checkbox"> GOT SPAWNS</label>
-          <label class="chip"><input id="lostSpawns" type="checkbox"> LOST SPAWNS</label>
-          <label class="chip"><input id="freeKill" type="checkbox"> FREE KILL</label>
-          <label class="chip"><input id="freeDeath" type="checkbox"> FREE DEATH</label>
+          <div class="chip-row">
+            <label class="chip"><input id="goodFight" type="checkbox"> GOOD FIGHT</label>
+            <label class="chip"><input id="badFight" type="checkbox"> BAD FIGHT</label>
+          </div>
+          <div class="chip-row">
+            <label class="chip"><input id="goodRoute" type="checkbox"> GOOD ROUTE</label>
+            <label class="chip"><input id="badRoute" type="checkbox"> BAD ROUTE</label>
+          </div>
+          <div class="chip-row">
+            <label class="chip"><input id="gotSpawns" type="checkbox"> GOT SPAWNS</label>
+            <label class="chip"><input id="lostSpawns" type="checkbox"> LOST SPAWNS</label>
+          </div>
+          <div class="chip-row">
+            <label class="chip"><input id="freeKill" type="checkbox"> FREE KILL</label>
+            <label class="chip"><input id="freeDeath" type="checkbox"> FREE DEATH</label>
+          </div>
         </div>
 
         <div class="actions">

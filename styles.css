@@ -14,7 +14,8 @@ input[type="text"], select { width: 100%; padding: 10px 12px; border-radius: 8px
 .score-row { display: flex; gap: 10px; }
 .score-btn { background: #0f1220; border: 1px solid var(--border); color: var(--text); padding: 10px 16px; border-radius: 8px; cursor: pointer; min-width: 44px; }
 .score-btn.active { border-color: var(--primary); background: rgba(59,130,246,.15); }
-.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chips { display: flex; flex-direction: column; gap: 10px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .chip { border: 1px solid var(--border); background: #0f1220; padding: 8px 12px; border-radius: 999px; display: inline-flex; gap: 8px; align-items: center; cursor: pointer; user-select: none; }
 .chip input { accent-color: var(--primary); }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }

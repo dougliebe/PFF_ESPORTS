@@ -18,6 +18,10 @@
   // Elements
   const matchLink = document.getElementById('matchLink');
   const playerSelect = document.getElementById('playerSelect');
+  const playersList = document.getElementById('playersList');
+  const loadPlayersBtn = document.getElementById('loadPlayersBtn');
+  const playersFile = document.getElementById('playersFile');
+  const playersHint = document.getElementById('playersHint');
   const modeSelect = document.getElementById('modeSelect');
   const scoreButtons = Array.from(document.querySelectorAll('.score-btn'));
   const chips = {
@@ -43,10 +47,11 @@
   reflectHeaderInputs();
   reflectSelectedScore();
   updateMatchIdDisplay();
+  loadPlayersCsv();
 
   function bindEvents() {
     matchLink.addEventListener('input', () => { state.match = matchLink.value.trim(); autoParseMatchId(); persist(); });
-    playerSelect.addEventListener('change', () => { state.player = playerSelect.value; persist(); });
+    playerSelect.addEventListener('input', () => { state.player = playerSelect.value; persist(); });
     modeSelect.addEventListener('change', () => { state.mode = modeSelect.value; persist(); });
 
     scoreButtons.forEach(btn => btn.addEventListener('click', () => {
@@ -59,6 +64,71 @@
     cancelEditBtn.addEventListener('click', clearEditMode);
     exportCsvBtn.addEventListener('click', exportCsv);
     resetBtn.addEventListener('click', resetSession);
+    if (loadPlayersBtn && playersFile) {
+      loadPlayersBtn.addEventListener('click', function(){ playersFile.click(); });
+      playersFile.addEventListener('change', onPlayersFileChosen);
+    }
+  }
+  async function loadPlayersCsv() {
+    try {
+      const res = await fetch('players.csv', { cache: 'no-store' });
+      if (!res.ok) throw new Error('not ok');
+      const text = await res.text();
+      const names = parsePlayersCsv(text);
+      populatePlayersDatalist(names);
+      setPlayersHint(`Loaded ${names.length} players from players.csv`);
+    } catch {
+      setPlayersHint('Could not auto-load players.csv. Use "Load Players CSV" to choose a file.');
+    }
+  }
+
+  function parsePlayersCsv(text) {
+    const lines = text.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(function(l){ return l.length > 0; });
+    if (lines.length === 0) return [];
+    const header = lines[0].split(',').map(function(h){ return h.trim().toLowerCase(); });
+    const nameIdx = header.indexOf('player_name');
+    if (nameIdx === -1) {
+      // If header missing, treat each line as a name
+      return lines.map(function(l){ return l.split(',')[0]; }).slice(0);
+    }
+    const names = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',');
+      const name = (cols[nameIdx] || '').trim();
+      if (name) names.push(name);
+    }
+    // Deduplicate
+    return Array.from(new Set(names));
+  }
+
+  function populatePlayersDatalist(names) {
+    if (!playersList) return;
+    playersList.innerHTML = '';
+    names.forEach(function(n){
+      const opt = document.createElement('option');
+      opt.value = n;
+      playersList.appendChild(opt);
+    });
+  }
+
+  function onPlayersFileChosen(evt) {
+    const file = evt.target && evt.target.files && evt.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const text = String(e.target.result || '');
+        const names = parsePlayersCsv(text);
+        populatePlayersDatalist(names);
+        setPlayersHint(`Loaded ${names.length} players from ${file.name}`);
+      } catch { setPlayersHint('Failed to read CSV file.'); }
+    };
+    reader.readAsText(file);
+  }
+
+  function setPlayersHint(msg) {
+    if (!playersHint) return;
+    playersHint.textContent = msg || '';
   }
 
   function autoParseMatchId() {
