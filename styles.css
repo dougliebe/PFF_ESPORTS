@@ -1,12 +1,14 @@
-:root { --bg:#0f1115; --panel:#151823; --muted:#cfcfcf; --text:#e7e9f2; --primary:#3b82f6; --accent:#22c55e; --danger:#ef4444; --border:#fdfdfd; }
+:root { --bg:#0f1115; --panel:#151823; --muted:#cfcfcf; --text:#e7e9f2; --primary:#3b82f6; --accent:#22c55e; --danger:#ef4444; --border:#888888; }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
-.container { max-width: 1100px; margin: 0 auto; padding: 16px; }
+.container { max-width: 1400px; margin: 0 auto; padding: 16px; }
 header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 h1 { font-size: 20px; margin: 0; font-weight: 700; }
-.grid { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+.grid { display: grid; grid-template-columns: 1fr 420px; gap: 16px; align-items: start; }
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.span-2 { grid-column: 1 / -1; }
+.col-right { grid-column: 2; }
 .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; align-items: center; }
 label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
 input[type="text"], select { width: 100%; padding: 10px 12px; border-radius: 8px; background: #0f1220; border: 1px solid var(--border); color: var(--text); }
@@ -32,9 +34,12 @@ button.danger { background: var(--danger); color: white; border: none; padding: 
 .life-actions { display: flex; gap: 6px; }
 .life-actions button { padding: 6px 10px; font-size: 12px; }
 .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 18px; border: 1px dashed var(--border); border-radius: 10px; }
-@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .col-right { grid-column: auto; } }
 
 .hint { margin-top: 6px; font-size: 12px; color: var(--muted); min-height: 18px; }
 .hint.error { color: #fca5a5; }
+
+.video-box { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #0b0d16; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.video-box iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 

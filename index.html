@@ -17,11 +17,12 @@
     </header>
 
     <div class="grid">
-      <section class="panel" aria-label="Life Input">
-        <div class="row" style="margin-bottom: 10px;">
+      <!-- Top info bar spanning full width -->
+      <section class="panel span-2" aria-label="Game Info">
+        <div class="row" style="margin-bottom: 0;">
           <div style="grid-column: span 6;">
             <label for="matchLink">Input Match Link</label>
-            <input id="matchLink" type="text" placeholder="https://..." autocomplete="off">
+            <input id="matchLink" type="text" placeholder="https://www.breakingpoint.gg/match/..." autocomplete="off">
             <div id="matchIdDisplay" class="hint"></div>
           </div>
           <div style="grid-column: span 3;">
@@ -50,13 +51,33 @@
             </select>
           </div>
         </div>
+      </section>
 
+      <!-- Left: Video, Right: Inputs, then Lives below inputs -->
+      <section class="panel" aria-label="YouTube Video">
+        <div class="section-title">YouTube Video</div>
+        <div class="row" style="margin-bottom: 10px;">
+          <div style="grid-column: span 9;">
+            <label for="youtubeUrl">Input YouTube URL</label>
+            <input id="youtubeUrl" type="text" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+            <div id="youtubeHint" class="hint"></div>
+          </div>
+          <div style="grid-column: span 3; display:flex; align-items: end;">
+            <button id="loadVideoBtn" class="primary" style="width:100%;">Load Video</button>
+          </div>
+        </div>
+        <div class="video-box">
+          <iframe id="youtubeFrame" src="" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+      </section>
+
+      <section class="panel col-right" aria-label="Life Input">
         <div class="section-title">Score the life overall</div>
         <div class="score-row" role="group" aria-label="Life Score">
           <button type="button" class="score-btn" data-score="-2">-2</button>
           <button type="button" class="score-btn" data-score="-1.5">-1.5</button>
           <button type="button" class="score-btn" data-score="-1">-1</button>
-          <button type="button" class="score-btn" data-score="-1">-0.5</button>
+          <button type="button" class="score-btn" data-score="-0.5">-0.5</button>
           <button type="button" class="score-btn" data-score="0">0</button>
           <button type="button" class="score-btn" data-score="0.5">+0.5</button>
           <button type="button" class="score-btn" data-score="1">+1</button>
@@ -68,13 +89,14 @@
         <div class="chips">
           <div class="chip-row">
             <label class="chip"><input id="goodFight" type="checkbox"> GOOD FIGHT</label>
-            <label class="chip"><input id="badFight" type="checkbox"> BAD FIGHT</label>
+            <label class="chip"><input id="gotSpawns" type="checkbox"> GOT SPAWNS</label>
           </div>
           <div class="chip-row">
             <label class="chip"><input id="goodRoute" type="checkbox"> GOOD ROUTE</label>
             <label class="chip"><input id="badRoute" type="checkbox"> BAD ROUTE</label>
           </div>
           <div class="chip-row">
+            <label class="chip"><input id="lostSpawns" type="checkbox"> LOST SPAWNS</label>
             <label class="chip"><input id="freeKill" type="checkbox"> FREE KILL</label>
             <label class="chip"><input id="freeDeath" type="checkbox"> FREE DEATH</label>
           </div>
@@ -86,7 +108,7 @@
         </div>
       </section>
 
-      <aside class="panel" aria-label="Lives List">
+      <aside class="panel col-right" aria-label="Lives List">
         <div class="section-title">List of Lives</div>
         <div id="lives" class="lives"></div>
       </aside>

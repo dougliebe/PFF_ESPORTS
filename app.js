@@ -3,7 +3,7 @@
 
   /** @typedef {{match_id:string, player:string, mode:string, lifeNum:number, score:number, good_fight:number, good_route:number, bad_route:number, got_spawns:number, lost_spawns:number, free_kill:number, free_death:number}} Life */
 
-  /** @type {{ match:string, matchId:string|null, player:string, mode:string, lives:Life[], nextLifeNum:number, editingIndex:number|null, selectedScore:number|null }} */
+  /** @type {{ match:string, matchId:string|null, player:string, mode:string, lives:Life[], nextLifeNum:number, editingIndex:number|null, selectedScore:number|null, youtubeId:string|null, youtubeStartSeconds:number }} */
   const state = {
     match: '',
     matchId: null,
@@ -12,7 +12,9 @@
     lives: [],
     nextLifeNum: 1,
     editingIndex: null,
-    selectedScore: 0
+    selectedScore: 0,
+    youtubeId: null,
+    youtubeStartSeconds: 0
   };
 
   // Elements
@@ -39,6 +41,11 @@
   const exportCsvBtn = document.getElementById('exportCsvBtn');
   const resetBtn = document.getElementById('resetBtn');
   const matchIdDisplay = document.getElementById('matchIdDisplay');
+  // YouTube elements
+  const youtubeUrl = document.getElementById('youtubeUrl');
+  const youtubeHint = document.getElementById('youtubeHint');
+  const loadVideoBtn = document.getElementById('loadVideoBtn');
+  const youtubeFrame = document.getElementById('youtubeFrame');
 
   // Load session
   loadFromStorage();
@@ -48,6 +55,7 @@
   reflectSelectedScore();
   updateMatchIdDisplay();
   loadPlayersCsv();
+  reflectYouTube();
 
   function bindEvents() {
     matchLink.addEventListener('input', () => { state.match = matchLink.value.trim(); autoParseMatchId(); persist(); });
@@ -67,6 +75,10 @@
     if (loadPlayersBtn && playersFile) {
       loadPlayersBtn.addEventListener('click', function(){ playersFile.click(); });
       playersFile.addEventListener('change', onPlayersFileChosen);
+    }
+    if (youtubeUrl && loadVideoBtn) {
+      youtubeUrl.addEventListener('input', () => setYouTubeFromUrl(youtubeUrl.value));
+      loadVideoBtn.addEventListener('click', () => setYouTubeFromUrl(youtubeUrl.value, true));
     }
   }
   async function loadPlayersCsv() {
@@ -129,6 +141,81 @@
   function setPlayersHint(msg) {
     if (!playersHint) return;
     playersHint.textContent = msg || '';
+  }
+
+  function setYouTubeFromUrl(url, withNotify) {
+    url = (url || '').trim();
+    if (!url) { state.youtubeId = null; state.youtubeStartSeconds = 0; reflectYouTube(); return; }
+    const parsed = parseYouTube(url);
+    if (!parsed) { if (withNotify && youtubeHint) { youtubeHint.textContent = 'Invalid YouTube URL'; youtubeHint.classList.add('error'); } return; }
+    state.youtubeId = parsed.id;
+    state.youtubeStartSeconds = parsed.start || 0;
+    if (youtubeHint) { youtubeHint.textContent = ''; youtubeHint.classList.remove('error'); }
+    persist();
+    reflectYouTube();
+  }
+
+  function parseYouTube(url) {
+    try {
+      const u = new URL(url);
+      const host = u.hostname;
+      const path = u.pathname || '';
+      let id = null;
+      let start = 0;
+      if (host.includes('youtube.com')) {
+        if (path.startsWith('/watch')) {
+          id = u.searchParams.get('v');
+          start = parseStartParam(u.searchParams.get('t') || u.searchParams.get('start'));
+        } else if (path.startsWith('/embed/')) {
+          id = path.split('/')[2] || null;
+          start = parseStartParam(u.searchParams.get('start') || u.searchParams.get('t'));
+        } else if (path.startsWith('/live/')) {
+          id = path.split('/')[2] || null;
+          start = parseStartParam(u.searchParams.get('t') || u.searchParams.get('start'));
+        }
+      } else if (host === 'youtu.be') {
+        id = path.replace(/^\//,'').split('/')[0] || null;
+        start = parseStartParam(u.searchParams.get('t'));
+      }
+      if (!id) return null;
+      return { id: id, start: start };
+    } catch {
+      // Fallback regex parsing
+      const idMatch = url.match(/[?&]v=([^&#]+)/) || url.match(/youtu\.be\/([^?&#/]+)/) || url.match(/youtube\.com\/embed\/([^?&#/]+)/) || url.match(/youtube\.com\/live\/([^?&#/]+)/);
+      const id = idMatch && idMatch[1] ? idMatch[1] : null;
+      const tMatch = url.match(/[?&]t=([^&#]+)/) || url.match(/[?&]start=([^&#]+)/);
+      const start = parseStartParam(tMatch ? tMatch[1] : null);
+      if (!id) return null;
+      return { id: id, start: start };
+    }
+  }
+
+  function parseStartParam(value) {
+    if (!value) return 0;
+    // Accept numbers, numbers ending with s, or 1h2m3s notation
+    const v = String(value).trim();
+    if (/^\d+$/.test(v)) return parseInt(v, 10);
+    if (/^\d+s$/.test(v)) return parseInt(v, 10);
+    const re = /((\d+)h)?((\d+)m)?((\d+)s)?/i;
+    const m = v.match(re);
+    if (m) {
+      const h = m[2] ? parseInt(m[2], 10) : 0;
+      const mnt = m[4] ? parseInt(m[4], 10) : 0;
+      const s = m[6] ? parseInt(m[6], 10) : 0;
+      const total = h * 3600 + mnt * 60 + s;
+      if (total > 0) return total;
+    }
+    return 0;
+  }
+
+  function reflectYouTube() {
+    if (youtubeUrl) youtubeUrl.value = state.youtubeId ? `https://www.youtube.com/watch?v=${state.youtubeId}` : (youtubeUrl.value || '');
+    if (youtubeFrame) {
+      if (state.youtubeId) {
+        const startParam = state.youtubeStartSeconds > 0 ? `?start=${state.youtubeStartSeconds}` : '';
+        youtubeFrame.src = `https://www.youtube.com/embed/${state.youtubeId}${startParam}`;
+      } else { youtubeFrame.src = ''; }
+    }
   }
 
   function autoParseMatchId() {
@@ -335,7 +422,9 @@
       player: state.player,
       mode: state.mode,
       lives: state.lives,
-      nextLifeNum: state.nextLifeNum
+      nextLifeNum: state.nextLifeNum,
+      youtubeId: state.youtubeId,
+      youtubeStartSeconds: state.youtubeStartSeconds
     };
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
   }
@@ -349,6 +438,8 @@
       state.matchId = saved.matchId || null;
       state.player = saved.player || '';
       state.mode = saved.mode || '';
+      state.youtubeId = saved.youtubeId || null;
+      state.youtubeStartSeconds = Number(saved.youtubeStartSeconds || 0);
       // Migrate any historical records that used `match` to `match_id`
       state.lives = Array.isArray(saved.lives) ? saved.lives.map(function(l){
         if (typeof l === 'object' && l !== null) {
