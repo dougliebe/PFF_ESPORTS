@@ -5,34 +5,18 @@
    *  match_id:string,
    *  player:string,
    *  mode:string,
-   *  lifeNum:number,
-   *  score:number,
-   *  video_time:number,
-   *  // Good chips
-   *  good_route:number,
-   *  got_spawns:number,
-   *  good_trade:number,
-   *  played_life:number,
-   *  flank:number,
-   *  free_kill:number,
-   *  // Bad chips
-   *  bad_route:number,
-   *  lost_spawns:number,
-   *  bad_trade:number,
-   *  gave_up_life:number,
-   *  free_death:number
-   * }} Life */
+   *  event:string,
+   *  value:number,
+   *  video_time:number
+   * }} ChipEvent */
 
-  /** @type {{ match:string, matchId:string|null, player:string, mode:string, lives:Life[], nextLifeNum:number, editingIndex:number|null, selectedScore:number|null, youtubeId:string|null, youtubeStartSeconds:number }} */
+  /** @type {{ match:string, matchId:string|null, player:string, mode:string, events:ChipEvent[], youtubeId:string|null, youtubeStartSeconds:number, crop?:string }} */
   const state = {
     match: '',
     matchId: null,
     player: '',
     mode: '',
-    lives: [],
-    nextLifeNum: 1,
-    editingIndex: null,
-    selectedScore: 0,
+    events: [],
     youtubeId: null,
     youtubeStartSeconds: 0
   };
@@ -45,7 +29,6 @@
   const playersFile = document.getElementById('playersFile');
   const playersHint = document.getElementById('playersHint');
   const modeSelect = document.getElementById('modeSelect');
-  const scoreButtons = Array.from(document.querySelectorAll('.score-btn'));
   const chips = {
     // Good
     goodRoute: document.getElementById('goodRoute'),
@@ -61,8 +44,6 @@
     gaveUpLife: document.getElementById('gaveUpLife'),
     freeDeath: document.getElementById('freeDeath')
   };
-  const submitBtn = document.getElementById('submitBtn');
-  const cancelEditBtn = document.getElementById('cancelEditBtn');
   const livesEl = document.getElementById('lives');
   const exportCsvBtn = document.getElementById('exportCsvBtn');
   const resetBtn = document.getElementById('resetBtn');
@@ -83,9 +64,8 @@
   // Load session
   loadFromStorage();
   bindEvents();
-  renderLives();
+  renderEvents();
   reflectHeaderInputs();
-  reflectSelectedScore();
   updateMatchIdDisplay();
   loadPlayersCsv();
   reflectYouTube();
@@ -95,14 +75,7 @@
     playerSelect.addEventListener('input', () => { state.player = playerSelect.value; persist(); });
     modeSelect.addEventListener('change', () => { state.mode = modeSelect.value; persist(); });
 
-    scoreButtons.forEach(btn => btn.addEventListener('click', () => {
-      const score = Number(btn.getAttribute('data-score'));
-      state.selectedScore = score;
-      reflectSelectedScore();
-    }));
-
-    submitBtn.addEventListener('click', onSubmitLife);
-    cancelEditBtn.addEventListener('click', clearEditMode);
+    bindChipEvents();
     exportCsvBtn.addEventListener('click', exportCsv);
     resetBtn.addEventListener('click', resetSession);
     if (loadPlayersBtn && playersFile) {
@@ -119,6 +92,34 @@
     if (toggleZoomBtn) {
       toggleZoomBtn.addEventListener('click', onToggleZoom);
     }
+  }
+
+  function bindChipEvents() {
+    /** @type {Record<string, string>} */
+    const keyMap = {
+      goodRoute: 'good_route',
+      gotSpawns: 'got_spawns',
+      goodTrade: 'good_trade',
+      playedLife: 'played_life',
+      flank: 'flank',
+      freeKill: 'free_kill',
+      badRoute: 'bad_route',
+      lostSpawns: 'lost_spawns',
+      badTrade: 'bad_trade',
+      gaveUpLife: 'gave_up_life',
+      freeDeath: 'free_death'
+    };
+    Object.entries(chips).forEach(function(entry){
+      const key = entry[0];
+      const input = entry[1];
+      if (!input) return;
+      input.addEventListener('change', function(){
+        const eventName = keyMap[key] || key;
+        // Always record as 1 on press, then reset UI back to unchecked
+        logChipEvent(eventName, 1);
+        try { input.checked = false; } catch {}
+      });
+    });
   }
 
   // Expose API-ready callback for YouTube IFrame API
@@ -366,48 +367,19 @@
     }
   }
 
-  function onSubmitLife() {
-    if (!state.player || !state.mode) {
-      alert('Please select a player and a game/mode first.');
-      return;
-    }
-    if (state.selectedScore === null) {
-      state.selectedScore = 0;
-    }
-
-    const currentVideoTime = getCurrentVideoTime();
-    const life = /** @type {Life} */ ({
+  function logChipEvent(eventName, value) {
+    const t = Math.floor(getCurrentVideoTime());
+    const ev = /** @type {ChipEvent} */ ({
       match_id: state.matchId || '',
-      player: state.player,
-      mode: state.mode,
-      lifeNum: state.editingIndex === null ? state.nextLifeNum : state.lives[state.editingIndex].lifeNum,
-      score: Number(state.selectedScore),
-      video_time: Math.floor(currentVideoTime),
-      // Good
-      good_route: chips.goodRoute.checked ? 1 : 0,
-      got_spawns: chips.gotSpawns.checked ? 1 : 0,
-      good_trade: chips.goodTrade.checked ? 1 : 0,
-      played_life: chips.playedLife.checked ? 1 : 0,
-      flank: chips.flank.checked ? 1 : 0,
-      free_kill: chips.freeKill.checked ? 1 : 0,
-      // Bad
-      bad_route: chips.badRoute.checked ? 1 : 0,
-      lost_spawns: chips.lostSpawns.checked ? 1 : 0,
-      bad_trade: chips.badTrade.checked ? 1 : 0,
-      gave_up_life: chips.gaveUpLife.checked ? 1 : 0,
-      free_death: chips.freeDeath.checked ? 1 : 0
+      player: state.player || '',
+      mode: state.mode || '',
+      event: eventName,
+      value: Number(value) === 1 ? 1 : 0,
+      video_time: t
     });
-
-    if (state.editingIndex === null) {
-      state.lives.push(life);
-      state.nextLifeNum += 1;
-    } else {
-      state.lives[state.editingIndex] = life;
-    }
-
+    state.events.push(ev);
     persist();
-    renderLives();
-    clearForm();
+    renderEvents();
   }
 
   function getCurrentVideoTime() {
@@ -421,138 +393,64 @@
     } catch { return Number(state.youtubeStartSeconds || 0); }
   }
 
-  function renderLives() {
+  function renderEvents() {
     livesEl.innerHTML = '';
-    if (state.lives.length === 0) {
+    if (!state.events || state.events.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty';
-      empty.textContent = 'No lives recorded yet. Submit the first one to start.';
+      empty.textContent = 'No events yet. Toggle chips to log at the current time.';
       livesEl.appendChild(empty);
       return;
     }
-    state.lives
-      .slice()
-      .sort((a, b) => b.lifeNum - a.lifeNum)
-      .forEach((life, index) => {
-        const item = document.createElement('div');
-        item.className = 'life-item';
+    const items = state.events.slice().sort(function(a,b){ return b.video_time - a.video_time; });
+    items.forEach(function(ev){
+      const item = document.createElement('div');
+      item.className = 'life-item';
 
-        const left = document.createElement('div');
-        const title = document.createElement('div');
-        title.className = 'title';
-        title.textContent = `Life ${life.lifeNum} — Score ${life.score}`;
-        left.appendChild(title);
+      const left = document.createElement('div');
+      const title = document.createElement('div');
+      title.className = 'title';
+      title.textContent = `${formatTime(ev.video_time)} — ${ev.event.toUpperCase()}`;
+      left.appendChild(title);
 
-        const meta = document.createElement('div');
-        meta.className = 'meta';
-        const matchStr = life.match_id ? ` | ID: ${life.match_id}` : '';
-        meta.textContent = `${life.player} | ${life.mode}${matchStr}`;
-        left.appendChild(meta);
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const matchStr = ev.match_id ? ` | ID: ${ev.match_id}` : '';
+      meta.textContent = `${ev.player} | ${ev.mode}${matchStr}`;
+      left.appendChild(meta);
 
-        const tags = document.createElement('div');
-        tags.className = 'tags';
-        const tagList = [
-          // Good
-          life.good_route ? 'GOOD ROUTE' : null,
-          life.got_spawns ? 'GOT SPAWNS' : null,
-          life.good_trade ? 'GOOD TRADE' : null,
-          life.played_life ? 'PLAYED LIFE' : null,
-          life.flank ? 'FLANK' : null,
-          life.free_kill ? 'FREE KILL' : null,
-          // Bad
-          life.bad_route ? 'BAD ROUTE' : null,
-          life.lost_spawns ? 'LOST SPAWNS' : null,
-          life.bad_trade ? 'BAD TRADE' : null,
-          life.gave_up_life ? 'GAVE UP LIFE' : null,
-          life.free_death ? 'FREE DEATH' : null
-        ].filter(Boolean);
-        if (tagList.length) {
-          tagList.forEach(t => {
-            const span = document.createElement('span');
-            span.className = 'tag';
-            span.textContent = t;
-            tags.appendChild(span);
-          });
-        }
-        left.appendChild(tags);
+      const right = document.createElement('div');
+      right.className = 'life-actions';
+      const delBtn = document.createElement('button');
+      delBtn.className = 'danger';
+      delBtn.textContent = 'Delete';
+      const originalIndex = state.events.indexOf(ev);
+      delBtn.addEventListener('click', function(){ deleteEvent(originalIndex); });
+      right.appendChild(delBtn);
 
-        const right = document.createElement('div');
-        right.className = 'life-actions';
-        const editBtn = document.createElement('button');
-        editBtn.className = 'ghost';
-        editBtn.textContent = 'Edit';
-        editBtn.addEventListener('click', () => startEdit(index));
-        const delBtn = document.createElement('button');
-        delBtn.className = 'danger';
-        delBtn.textContent = 'Delete';
-        delBtn.addEventListener('click', () => deleteLife(index));
-        right.appendChild(editBtn);
-        right.appendChild(delBtn);
-
-        item.appendChild(left);
-        item.appendChild(right);
-        livesEl.appendChild(item);
-      });
-  }
-
-  function startEdit(index) {
-    const life = state.lives[index];
-    state.editingIndex = index;
-    state.player = life.player;
-    state.mode = life.mode;
-    state.selectedScore = life.score;
-
-    // Keep current parsed URL and matchId as session-level; do not override from life
-    playerSelect.value = state.player;
-    modeSelect.value = state.mode;
-    chips.goodRoute.checked = life.good_route === 1;
-    chips.gotSpawns.checked = life.got_spawns === 1;
-    chips.goodTrade.checked = life.good_trade === 1;
-    chips.playedLife.checked = life.played_life === 1;
-    chips.flank.checked = life.flank === 1;
-    chips.lostSpawns.checked = life.lost_spawns === 1;
-    chips.badRoute.checked = life.bad_route === 1;
-    chips.badTrade.checked = life.bad_trade === 1;
-    chips.gaveUpLife.checked = life.gave_up_life === 1;
-    chips.freeKill.checked = life.free_kill === 1;
-    chips.freeDeath.checked = life.free_death === 1;
-
-    submitBtn.textContent = 'Update Life';
-    cancelEditBtn.style.display = '';
-    reflectSelectedScore();
-  }
-
-  function deleteLife(index) {
-    const life = state.lives[index];
-    if (!confirm(`Delete Life ${life.lifeNum}?`)) return;
-    state.lives.splice(index, 1);
-    // Re-number lives to keep sequence tight
-    state.lives.sort((a,b) => a.lifeNum - b.lifeNum).forEach((l, i) => l.lifeNum = i + 1);
-    state.nextLifeNum = state.lives.length + 1;
-    persist();
-    renderLives();
-    if (state.editingIndex === index) clearEditMode();
-  }
-
-  function clearForm() {
-    state.selectedScore = 0;
-    Object.values(chips).forEach(chk => chk.checked = false);
-    reflectSelectedScore();
-    clearEditMode();
-  }
-
-  function clearEditMode() {
-    state.editingIndex = null;
-    submitBtn.textContent = 'Submit Life';
-    cancelEditBtn.style.display = 'none';
-    // Keep header inputs as-is; they are session-level
-  }
-
-  function reflectSelectedScore() {
-    scoreButtons.forEach(btn => {
-      const score = Number(btn.getAttribute('data-score'));
-      btn.classList.toggle('active', state.selectedScore === score);
+      item.appendChild(left);
+      item.appendChild(right);
+      livesEl.appendChild(item);
     });
+  }
+
+  function deleteEvent(index) {
+    if (index < 0 || index >= state.events.length) return;
+    const ev = state.events[index];
+    if (!confirm(`Delete ${ev.event} at ${formatTime(ev.video_time)}?`)) return;
+    state.events.splice(index, 1);
+    persist();
+    renderEvents();
+  }
+
+  function formatTime(totalSeconds) {
+    const s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    const pad = function(n){ return n < 10 ? '0' + n : String(n); };
+    if (h > 0) return `${h}:${pad(m)}:${pad(sec)}`;
+    return `${m}:${pad(sec)}`;
   }
 
   function reflectHeaderInputs() {
@@ -567,8 +465,7 @@
       matchId: state.matchId,
       player: state.player,
       mode: state.mode,
-      lives: state.lives,
-      nextLifeNum: state.nextLifeNum,
+      events: state.events,
       youtubeId: state.youtubeId,
       youtubeStartSeconds: state.youtubeStartSeconds,
       crop: state.crop || 'none'
@@ -588,56 +485,27 @@
       state.youtubeId = saved.youtubeId || null;
       state.youtubeStartSeconds = Number(saved.youtubeStartSeconds || 0);
       state.crop = saved.crop || 'none';
-      // Migrate any historical records that used `match` to `match_id`
-      state.lives = Array.isArray(saved.lives) ? saved.lives.map(function(l){
-        if (typeof l === 'object' && l !== null) {
-          if (!('match_id' in l) && 'match' in l) {
-            l.match_id = l.match || '';
-          }
-        }
-        return l;
-      }) : [];
-      state.nextLifeNum = Number(saved.nextLifeNum) || (state.lives.length + 1);
+      state.events = Array.isArray(saved.events) ? saved.events.slice(0) : [];
     } catch {}
   }
 
   function exportCsv() {
-    if (state.lives.length === 0) { alert('No lives to export.'); return; }
+    if (!state.events || state.events.length === 0) { alert('No events to export.'); return; }
     const rows = [];
-    const headers = [
-      'match_id','game_mode','player','life_num','score','video_time',
-      // Good
-      'good_route','got_spawns','good_trade','played_life','flank','free_kill',
-      // Bad
-      'bad_route','lost_spawns','bad_trade','gave_up_life','free_death'
-    ];
+    const headers = ['match_id','game_mode','player','event','value','video_time','youtube_url'];
     rows.push(headers);
-    state.lives
-      .slice()
-      .sort((a,b) => a.lifeNum - b.lifeNum)
-      .forEach(l => {
-        rows.push([
-          l.match_id || '',
-          l.mode,
-          l.player,
-          String(l.lifeNum),
-          String(l.score),
-          String(l.video_time || 0),
-          // Good
-          String(l.good_route || 0),
-          String(l.got_spawns || 0),
-          String(l.good_trade || 0),
-          String(l.played_life || 0),
-          String(l.flank || 0),
-          String(l.free_kill || 0),
-          // Bad
-          String(l.bad_route || 0),
-          String(l.lost_spawns || 0),
-          String(l.bad_trade || 0),
-          String(l.gave_up_life || 0),
-          String(l.free_death || 0)
-        ]);
-      });
+    const youtubeUrlCsv = state.youtubeId ? `https://www.youtube.com/watch?v=${state.youtubeId}` : '';
+    state.events.slice().sort(function(a,b){ return a.video_time - b.video_time; }).forEach(function(ev){
+      rows.push([
+        ev.match_id || '',
+        ev.mode || '',
+        ev.player || '',
+        ev.event,
+        String(ev.value || 0),
+        String(ev.video_time || 0),
+        youtubeUrlCsv
+      ]);
+    });
     const csv = rows.map(r => r.map(cell => needsCsvEscaping(cell) ? '"' + String(cell).replaceAll('"','""') + '"' : cell).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -646,7 +514,7 @@
     const modeSlug = state.mode ? state.mode.replace(/\s+/g,'_') : 'mode';
     const idSlug = state.matchId ? state.matchId : 'noid';
     a.href = url;
-    a.download = `lives_${idSlug}_${playerSlug}_${modeSlug}.csv`;
+    a.download = `events_${idSlug}_${playerSlug}_${modeSlug}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -664,17 +532,13 @@
     state.matchId = null;
     state.player = '';
     state.mode = '';
-    state.lives = [];
-    state.nextLifeNum = 1;
-    state.editingIndex = null;
-    state.selectedScore = null;
+    state.events = [];
     state.crop = 'none';
     if (cropSelect) cropSelect.value = 'none';
     applyCropClass();
     reflectCropControls();
     reflectHeaderInputs();
-    reflectSelectedScore();
-    renderLives();
+    renderEvents();
     updateMatchIdDisplay();
   }
 })();
