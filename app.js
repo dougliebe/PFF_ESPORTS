@@ -368,6 +368,10 @@
   }
 
   function logChipEvent(eventName, value) {
+    if (!state.player || !state.mode) {
+      alert('Please select a player and a game/mode first.');
+      return;
+    }
     const t = Math.floor(getCurrentVideoTime());
     const ev = /** @type {ChipEvent} */ ({
       match_id: state.matchId || '',
@@ -436,8 +440,6 @@
 
   function deleteEvent(index) {
     if (index < 0 || index >= state.events.length) return;
-    const ev = state.events[index];
-    if (!confirm(`Delete ${ev.event} at ${formatTime(ev.video_time)}?`)) return;
     state.events.splice(index, 1);
     persist();
     renderEvents();
