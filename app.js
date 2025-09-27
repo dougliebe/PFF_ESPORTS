@@ -300,7 +300,7 @@
       return;
     }
     if (state.selectedScore === null) {
-      if (!confirm('No score selected. Submit with score = 0?')) return; else state.selectedScore = 0;
+      state.selectedScore = 0;
     }
 
     const life = /** @type {Life} */ ({
