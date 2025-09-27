@@ -7,6 +7,7 @@
    *  mode:string,
    *  lifeNum:number,
    *  score:number,
+   *  video_time:number,
    *  // Good chips
    *  good_route:number,
    *  got_spawns:number,
@@ -75,6 +76,10 @@
   const videoBox = document.getElementById('videoBox');
   const toggleZoomBtn = document.getElementById('toggleZoomBtn');
 
+  // YouTube API state
+  let ytPlayer = null;
+  let youTubeApiReady = false;
+
   // Load session
   loadFromStorage();
   bindEvents();
@@ -115,6 +120,14 @@
       toggleZoomBtn.addEventListener('click', onToggleZoom);
     }
   }
+
+  // Expose API-ready callback for YouTube IFrame API
+  try {
+    window.onYouTubeIframeAPIReady = function(){
+      youTubeApiReady = true;
+      createOrUpdateYouTubePlayer();
+    };
+  } catch {}
   async function loadPlayersCsv() {
     try {
       const res = await fetch('players.csv', { cache: 'no-store' });
@@ -244,14 +257,48 @@
 
   function reflectYouTube() {
     if (youtubeUrl) youtubeUrl.value = state.youtubeId ? `https://www.youtube.com/watch?v=${state.youtubeId}` : (youtubeUrl.value || '');
-    if (youtubeFrame) {
-      if (state.youtubeId) {
-        const startParam = state.youtubeStartSeconds > 0 ? `?start=${state.youtubeStartSeconds}` : '';
-        youtubeFrame.src = `https://www.youtube.com/embed/${state.youtubeId}${startParam}`;
-      } else { youtubeFrame.src = ''; }
+    if (state.youtubeId) {
+      // If API is ready, ensure player; else fallback to embed with enablejsapi for future takeover
+      if (youTubeApiReady) {
+        createOrUpdateYouTubePlayer();
+      } else if (youtubeFrame) {
+        const start = state.youtubeStartSeconds > 0 ? `&start=${state.youtubeStartSeconds}` : '';
+        const origin = location && location.origin ? `&origin=${encodeURIComponent(location.origin)}` : '';
+        youtubeFrame.src = `https://www.youtube.com/embed/${state.youtubeId}?enablejsapi=1${start}${origin}`;
+      }
+    } else if (youtubeFrame) {
+      youtubeFrame.src = '';
     }
     applyCropClass();
     reflectCropControls();
+  }
+
+  function createOrUpdateYouTubePlayer() {
+    if (!youTubeApiReady || !youtubeFrame) return;
+    const vars = {
+      start: state.youtubeStartSeconds || 0,
+      rel: 0,
+      playsinline: 1
+    };
+    // Create if missing
+    if (!ytPlayer) {
+      try {
+        ytPlayer = new YT.Player('youtubeFrame', {
+          videoId: state.youtubeId || '',
+          playerVars: vars,
+          events: {
+            onReady: function(){ /* no-op */ }
+          }
+        });
+      } catch {}
+      return;
+    }
+    // Update existing player if video differs
+    try {
+      if (state.youtubeId) {
+        ytPlayer.loadVideoById({ videoId: state.youtubeId, startSeconds: state.youtubeStartSeconds || 0 });
+      }
+    } catch {}
   }
 
   function onCropChange() {
@@ -328,12 +375,14 @@
       state.selectedScore = 0;
     }
 
+    const currentVideoTime = getCurrentVideoTime();
     const life = /** @type {Life} */ ({
       match_id: state.matchId || '',
       player: state.player,
       mode: state.mode,
       lifeNum: state.editingIndex === null ? state.nextLifeNum : state.lives[state.editingIndex].lifeNum,
       score: Number(state.selectedScore),
+      video_time: Math.floor(currentVideoTime),
       // Good
       good_route: chips.goodRoute.checked ? 1 : 0,
       got_spawns: chips.gotSpawns.checked ? 1 : 0,
@@ -359,6 +408,17 @@
     persist();
     renderLives();
     clearForm();
+  }
+
+  function getCurrentVideoTime() {
+    try {
+      if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+        const t = Number(ytPlayer.getCurrentTime());
+        if (Number.isFinite(t) && t >= 0) return t;
+      }
+      // Fallback: if we had a start time and no player yet, return approximate start
+      return Number(state.youtubeStartSeconds || 0);
+    } catch { return Number(state.youtubeStartSeconds || 0); }
   }
 
   function renderLives() {
@@ -545,7 +605,7 @@
     if (state.lives.length === 0) { alert('No lives to export.'); return; }
     const rows = [];
     const headers = [
-      'match_id','game_mode','player','life_num','score',
+      'match_id','game_mode','player','life_num','score','video_time',
       // Good
       'good_route','got_spawns','good_trade','played_life','flank','free_kill',
       // Bad
@@ -562,6 +622,7 @@
           l.player,
           String(l.lifeNum),
           String(l.score),
+          String(l.video_time || 0),
           // Good
           String(l.good_route || 0),
           String(l.got_spawns || 0),
