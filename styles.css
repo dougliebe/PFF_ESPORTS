@@ -40,6 +40,18 @@ button.danger { background: var(--danger); color: white; border: none; padding: 
 .hint.error { color: #fca5a5; }
 
 .video-box { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #0b0d16; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.video-box iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
+.video-box iframe { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform .2s ease, left .2s ease, top .2s ease; }
+
+/* Cropping helpers: scale video and anchor to corners/center */
+.video-box.crop-zoom .video-box-inner { transform: scale(1.5); }
+.video-box.crop-zoom-2x .video-box-inner { transform: scale(2); }
+.video-box .video-box-inner { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.video-box.crop-none iframe { left: 0; top: 0; transform: none; }
+.video-box.crop-full iframe { left: 0; top: 0; transform: scale(1.5); transform-origin: center; }
+.video-box.crop-center iframe { left: 0; top: 0; transform: scale(2); transform-origin: center; }
+.video-box.crop-tl iframe { left: 0; top: 0; transform: scale(2); transform-origin: top left; }
+.video-box.crop-tr iframe { right: 0; top: 0; transform: scale(2); transform-origin: top right; }
+.video-box.crop-bl iframe { left: 0; bottom: 0; transform: scale(3); transform-origin: bottom left; }
+.video-box.crop-br iframe { right: 0; bottom: 0; transform: scale(2); transform-origin: bottom right; }
 
 

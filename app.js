@@ -71,6 +71,8 @@
   const youtubeHint = document.getElementById('youtubeHint');
   const loadVideoBtn = document.getElementById('loadVideoBtn');
   const youtubeFrame = document.getElementById('youtubeFrame');
+  const cropSelect = document.getElementById('cropSelect');
+  const videoBox = document.getElementById('videoBox');
 
   // Load session
   loadFromStorage();
@@ -104,6 +106,9 @@
     if (youtubeUrl && loadVideoBtn) {
       youtubeUrl.addEventListener('input', () => setYouTubeFromUrl(youtubeUrl.value));
       loadVideoBtn.addEventListener('click', () => setYouTubeFromUrl(youtubeUrl.value, true));
+    }
+    if (cropSelect) {
+      cropSelect.addEventListener('change', onCropChange);
     }
   }
   async function loadPlayersCsv() {
@@ -241,6 +246,21 @@
         youtubeFrame.src = `https://www.youtube.com/embed/${state.youtubeId}${startParam}`;
       } else { youtubeFrame.src = ''; }
     }
+    applyCropClass();
+  }
+
+  function onCropChange() {
+    const value = (cropSelect && cropSelect.value) || 'none';
+    state.crop = value;
+    applyCropClass();
+    persist();
+  }
+
+  function applyCropClass() {
+    if (!videoBox) return;
+    const allowed = ['none','full','center','tl','tr','bl','br'];
+    const val = allowed.includes(state.crop) ? state.crop : 'none';
+    videoBox.className = 'video-box crop-' + val;
   }
 
   function autoParseMatchId() {
@@ -465,7 +485,8 @@
       lives: state.lives,
       nextLifeNum: state.nextLifeNum,
       youtubeId: state.youtubeId,
-      youtubeStartSeconds: state.youtubeStartSeconds
+      youtubeStartSeconds: state.youtubeStartSeconds,
+      crop: state.crop || 'none'
     };
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
   }
@@ -481,6 +502,7 @@
       state.mode = saved.mode || '';
       state.youtubeId = saved.youtubeId || null;
       state.youtubeStartSeconds = Number(saved.youtubeStartSeconds || 0);
+      state.crop = saved.crop || 'none';
       // Migrate any historical records that used `match` to `match_id`
       state.lives = Array.isArray(saved.lives) ? saved.lives.map(function(l){
         if (typeof l === 'object' && l !== null) {

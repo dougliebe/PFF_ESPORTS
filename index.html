@@ -62,17 +62,27 @@
             <input id="youtubeUrl" type="text" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
             <div id="youtubeHint" class="hint"></div>
           </div>
-          <div style="grid-column: span 3; display:flex; align-items: end;">
+          <div style="grid-column: span 3; display:grid; grid-template-columns: 1fr; gap: 6px; align-items: end;">
+            <label for="cropSelect">Crop</label>
+            <select id="cropSelect">
+              <option value="none">None</option>
+              <option value="bl">Bottom Left</option>
+              <option value="br">Bottom Right</option>
+              <option value="tl">Top Left</option>
+              <option value="tr">Top Right</option>
+              <option value="center">Center</option>
+              <option value="full">Zoom Full</option>
+            </select>
             <button id="loadVideoBtn" class="primary" style="width:100%;">Load Video</button>
           </div>
         </div>
-        <div class="video-box">
+        <div class="video-box" id="videoBox">
           <iframe id="youtubeFrame" src="" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
         </div>
       </section>
 
       <section class="panel col-right" aria-label="Life Input">
-        <div class="section-title">Score the life overall</div>
+        <!-- <div class="section-title">Score the life overall</div>
         <div class="score-row" role="group" aria-label="Life Score">
           <button type="button" class="score-btn" data-score="-2">-2</button>
           <button type="button" class="score-btn" data-score="-1.5">-1.5</button>
@@ -83,7 +93,7 @@
           <button type="button" class="score-btn" data-score="1">+1</button>
           <button type="button" class="score-btn" data-score="1.5">+1.5</button>
           <button type="button" class="score-btn" data-score="2">+2</button>
-        </div>
+        </div> -->
 
         <div class="section-title">Select all that apply</div>
         <div class="chips">
