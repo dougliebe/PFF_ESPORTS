@@ -1,7 +1,26 @@
 (function() {
   const STORAGE_KEY = 'pff_esports_session_v1';
 
-  /** @typedef {{match_id:string, player:string, mode:string, lifeNum:number, score:number, good_fight:number, good_route:number, bad_route:number, got_spawns:number, lost_spawns:number, free_kill:number, free_death:number}} Life */
+  /** @typedef {{
+   *  match_id:string,
+   *  player:string,
+   *  mode:string,
+   *  lifeNum:number,
+   *  score:number,
+   *  // Good chips
+   *  good_route:number,
+   *  got_spawns:number,
+   *  good_trade:number,
+   *  played_life:number,
+   *  flank:number,
+   *  free_kill:number,
+   *  // Bad chips
+   *  bad_route:number,
+   *  lost_spawns:number,
+   *  bad_trade:number,
+   *  gave_up_life:number,
+   *  free_death:number
+   * }} Life */
 
   /** @type {{ match:string, matchId:string|null, player:string, mode:string, lives:Life[], nextLifeNum:number, editingIndex:number|null, selectedScore:number|null, youtubeId:string|null, youtubeStartSeconds:number }} */
   const state = {
@@ -27,12 +46,18 @@
   const modeSelect = document.getElementById('modeSelect');
   const scoreButtons = Array.from(document.querySelectorAll('.score-btn'));
   const chips = {
-    goodFight: document.getElementById('goodFight'),
+    // Good
     goodRoute: document.getElementById('goodRoute'),
-    badRoute: document.getElementById('badRoute'),
     gotSpawns: document.getElementById('gotSpawns'),
-    lostSpawns: document.getElementById('lostSpawns'),
+    goodTrade: document.getElementById('goodTrade'),
+    playedLife: document.getElementById('playedLife'),
+    flank: document.getElementById('flank'),
     freeKill: document.getElementById('freeKill'),
+    // Bad
+    badRoute: document.getElementById('badRoute'),
+    lostSpawns: document.getElementById('lostSpawns'),
+    badTrade: document.getElementById('badTrade'),
+    gaveUpLife: document.getElementById('gaveUpLife'),
     freeDeath: document.getElementById('freeDeath')
   };
   const submitBtn = document.getElementById('submitBtn');
@@ -264,12 +289,18 @@
       mode: state.mode,
       lifeNum: state.editingIndex === null ? state.nextLifeNum : state.lives[state.editingIndex].lifeNum,
       score: Number(state.selectedScore),
-      good_fight: chips.goodFight.checked ? 1 : 0,
+      // Good
       good_route: chips.goodRoute.checked ? 1 : 0,
-      bad_route: chips.badRoute.checked ? 1 : 0,
       got_spawns: chips.gotSpawns.checked ? 1 : 0,
-      lost_spawns: chips.lostSpawns.checked ? 1 : 0,
+      good_trade: chips.goodTrade.checked ? 1 : 0,
+      played_life: chips.playedLife.checked ? 1 : 0,
+      flank: chips.flank.checked ? 1 : 0,
       free_kill: chips.freeKill.checked ? 1 : 0,
+      // Bad
+      bad_route: chips.badRoute.checked ? 1 : 0,
+      lost_spawns: chips.lostSpawns.checked ? 1 : 0,
+      bad_trade: chips.badTrade.checked ? 1 : 0,
+      gave_up_life: chips.gaveUpLife.checked ? 1 : 0,
       free_death: chips.freeDeath.checked ? 1 : 0
     });
 
@@ -316,12 +347,18 @@
         const tags = document.createElement('div');
         tags.className = 'tags';
         const tagList = [
-          life.good_fight ? 'GOOD FIGHT' : null,
+          // Good
           life.good_route ? 'GOOD ROUTE' : null,
-          life.bad_route ? 'BAD ROUTE' : null,
           life.got_spawns ? 'GOT SPAWNS' : null,
-          life.lost_spawns ? 'LOST SPAWNS' : null,
+          life.good_trade ? 'GOOD TRADE' : null,
+          life.played_life ? 'PLAYED LIFE' : null,
+          life.flank ? 'FLANK' : null,
           life.free_kill ? 'FREE KILL' : null,
+          // Bad
+          life.bad_route ? 'BAD ROUTE' : null,
+          life.lost_spawns ? 'LOST SPAWNS' : null,
+          life.bad_trade ? 'BAD TRADE' : null,
+          life.gave_up_life ? 'GAVE UP LIFE' : null,
           life.free_death ? 'FREE DEATH' : null
         ].filter(Boolean);
         if (tagList.length) {
@@ -363,11 +400,15 @@
     // Keep current parsed URL and matchId as session-level; do not override from life
     playerSelect.value = state.player;
     modeSelect.value = state.mode;
-    chips.goodFight.checked = life.good_fight === 1;
     chips.goodRoute.checked = life.good_route === 1;
-    chips.badRoute.checked = life.bad_route === 1;
     chips.gotSpawns.checked = life.got_spawns === 1;
+    chips.goodTrade.checked = life.good_trade === 1;
+    chips.playedLife.checked = life.played_life === 1;
+    chips.flank.checked = life.flank === 1;
     chips.lostSpawns.checked = life.lost_spawns === 1;
+    chips.badRoute.checked = life.bad_route === 1;
+    chips.badTrade.checked = life.bad_trade === 1;
+    chips.gaveUpLife.checked = life.gave_up_life === 1;
     chips.freeKill.checked = life.free_kill === 1;
     chips.freeDeath.checked = life.free_death === 1;
 
@@ -456,7 +497,13 @@
   function exportCsv() {
     if (state.lives.length === 0) { alert('No lives to export.'); return; }
     const rows = [];
-    const headers = ['match_id','game_mode','player','life_num','score','good_route','bad_route','good_fight','got_spawns','lost_spawns','free_kill','free_death'];
+    const headers = [
+      'match_id','game_mode','player','life_num','score',
+      // Good
+      'good_route','got_spawns','good_trade','played_life','flank','free_kill',
+      // Bad
+      'bad_route','lost_spawns','bad_trade','gave_up_life','free_death'
+    ];
     rows.push(headers);
     state.lives
       .slice()
@@ -468,13 +515,19 @@
           l.player,
           String(l.lifeNum),
           String(l.score),
-          String(l.good_route),
-          String(l.bad_route),
-          String(l.good_fight),
-          String(l.got_spawns),
-          String(l.lost_spawns),
-          String(l.free_kill),
-          String(l.free_death)
+          // Good
+          String(l.good_route || 0),
+          String(l.got_spawns || 0),
+          String(l.good_trade || 0),
+          String(l.played_life || 0),
+          String(l.flank || 0),
+          String(l.free_kill || 0),
+          // Bad
+          String(l.bad_route || 0),
+          String(l.lost_spawns || 0),
+          String(l.bad_trade || 0),
+          String(l.gave_up_life || 0),
+          String(l.free_death || 0)
         ]);
       });
     const csv = rows.map(r => r.map(cell => needsCsvEscaping(cell) ? '"' + String(cell).replaceAll('"','""') + '"' : cell).join(',')).join('\n');
