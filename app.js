@@ -73,6 +73,7 @@
   const youtubeFrame = document.getElementById('youtubeFrame');
   const cropSelect = document.getElementById('cropSelect');
   const videoBox = document.getElementById('videoBox');
+  const toggleZoomBtn = document.getElementById('toggleZoomBtn');
 
   // Load session
   loadFromStorage();
@@ -109,6 +110,9 @@
     }
     if (cropSelect) {
       cropSelect.addEventListener('change', onCropChange);
+    }
+    if (toggleZoomBtn) {
+      toggleZoomBtn.addEventListener('click', onToggleZoom);
     }
   }
   async function loadPlayersCsv() {
@@ -247,12 +251,14 @@
       } else { youtubeFrame.src = ''; }
     }
     applyCropClass();
+    reflectCropControls();
   }
 
   function onCropChange() {
     const value = (cropSelect && cropSelect.value) || 'none';
     state.crop = value;
     applyCropClass();
+    reflectCropControls();
     persist();
   }
 
@@ -261,6 +267,25 @@
     const allowed = ['none','full','center','tl','tr','bl','br'];
     const val = allowed.includes(state.crop) ? state.crop : 'none';
     videoBox.className = 'video-box crop-' + val;
+  }
+
+  function reflectCropControls() {
+    if (cropSelect) {
+      const allowed = ['none','full','center','tl','tr','bl','br'];
+      const val = allowed.includes(state.crop) ? state.crop : 'none';
+      cropSelect.value = val;
+    }
+    if (toggleZoomBtn) {
+      const isBottomLeft = state.crop === 'bl';
+      toggleZoomBtn.textContent = isBottomLeft ? 'None' : 'Bottom Left';
+    }
+  }
+
+  function onToggleZoom() {
+    state.crop = state.crop === 'bl' ? 'none' : 'bl';
+    applyCropClass();
+    reflectCropControls();
+    persist();
   }
 
   function autoParseMatchId() {
@@ -582,6 +607,10 @@
     state.nextLifeNum = 1;
     state.editingIndex = null;
     state.selectedScore = null;
+    state.crop = 'none';
+    if (cropSelect) cropSelect.value = 'none';
+    applyCropClass();
+    reflectCropControls();
     reflectHeaderInputs();
     reflectSelectedScore();
     renderLives();
