@@ -199,8 +199,16 @@
     if (!url) { state.youtubeId = null; state.youtubeStartSeconds = 0; reflectYouTube(); return; }
     const parsed = parseYouTube(url);
     if (!parsed) { if (withNotify && youtubeHint) { youtubeHint.textContent = 'Invalid YouTube URL'; youtubeHint.classList.add('error'); } return; }
+    const previousId = state.youtubeId;
+    const previousStart = Number(state.youtubeStartSeconds || 0);
     state.youtubeId = parsed.id;
-    state.youtubeStartSeconds = parsed.start || 0;
+    // Preserve a previously detected non-zero start if this parse omitted it for the same video (e.g., due to input normalization)
+    const candidateStart = Number(parsed.start || 0);
+    if (candidateStart === 0 && previousId === parsed.id && previousStart > 0 && !withNotify) {
+      state.youtubeStartSeconds = previousStart;
+    } else {
+      state.youtubeStartSeconds = candidateStart;
+    }
     if (youtubeHint) { youtubeHint.textContent = ''; youtubeHint.classList.remove('error'); }
     persist();
     reflectYouTube();
@@ -260,7 +268,10 @@
   }
 
   function reflectYouTube() {
-    if (youtubeUrl) youtubeUrl.value = state.youtubeId ? `https://www.youtube.com/watch?v=${state.youtubeId}` : (youtubeUrl.value || '');
+    if (youtubeUrl) {
+      const tParam = state.youtubeStartSeconds > 0 ? `&t=${state.youtubeStartSeconds}s` : '';
+      youtubeUrl.value = state.youtubeId ? `https://www.youtube.com/watch?v=${state.youtubeId}${tParam}` : (youtubeUrl.value || '');
+    }
     if (state.youtubeId) {
       // If API is ready, ensure player; else fallback to embed with enablejsapi for future takeover
       if (youTubeApiReady) {
