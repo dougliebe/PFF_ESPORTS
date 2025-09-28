@@ -82,9 +82,12 @@
       loadPlayersBtn.addEventListener('click', function(){ playersFile.click(); });
       playersFile.addEventListener('change', onPlayersFileChosen);
     }
-    if (youtubeUrl && loadVideoBtn) {
-      youtubeUrl.addEventListener('input', () => setYouTubeFromUrl(youtubeUrl.value));
-      loadVideoBtn.addEventListener('click', () => setYouTubeFromUrl(youtubeUrl.value, true));
+    if (youtubeUrl) {
+      youtubeUrl.addEventListener('input', function(){ setYouTubeFromUrl(youtubeUrl.value); });
+      youtubeUrl.addEventListener('change', function(){ setYouTubeFromUrl(youtubeUrl.value, true); });
+    }
+    if (loadVideoBtn) {
+      loadVideoBtn.addEventListener('click', function(){ setYouTubeFromUrl(youtubeUrl ? youtubeUrl.value : '', true); });
     }
     if (cropSelect) {
       cropSelect.addEventListener('change', onCropChange);
