@@ -60,6 +60,8 @@
   // YouTube API state
   let ytPlayer = null;
   let youTubeApiReady = false;
+  let youTubeTimePollInterval = null;
+  let youTubeCurrentTimeSec = 0;
 
   // Load session
   loadFromStorage();
@@ -302,7 +304,8 @@
           videoId: state.youtubeId || '',
           playerVars: vars,
           events: {
-            onReady: function(){ /* no-op */ }
+            onReady: function(){ startYouTubeTimePolling(); },
+            onStateChange: function(){ startYouTubeTimePolling(); }
           }
         });
       } catch {}
@@ -312,8 +315,23 @@
     try {
       if (state.youtubeId) {
         ytPlayer.loadVideoById({ videoId: state.youtubeId, startSeconds: state.youtubeStartSeconds || 0 });
+        startYouTubeTimePolling();
       }
     } catch {}
+  }
+
+  function startYouTubeTimePolling() {
+    try { if (youTubeTimePollInterval) { clearInterval(youTubeTimePollInterval); } } catch {}
+    youTubeTimePollInterval = setInterval(function(){
+      try {
+        if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+          const t = Number(ytPlayer.getCurrentTime());
+          if (Number.isFinite(t) && t >= 0) {
+            youTubeCurrentTimeSec = t;
+          }
+        }
+      } catch {}
+    }, 300);
   }
 
   function onCropChange() {
@@ -402,6 +420,7 @@
 
   function getCurrentVideoTime() {
     try {
+      if (Number.isFinite(youTubeCurrentTimeSec) && youTubeCurrentTimeSec >= 0) return youTubeCurrentTimeSec;
       if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
         const t = Number(ytPlayer.getCurrentTime());
         if (Number.isFinite(t) && t >= 0) return t;
